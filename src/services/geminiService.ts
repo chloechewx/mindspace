@@ -48,7 +48,11 @@ async function callGeminiApi(prompt: string, temperature: number = 0.7, maxToken
 
   if (!response.ok) {
     const errorData: GeminiApiResponse = await response.json();
-    throw new Error(errorData.error || `API error: ${response.status}`);
+    throw new Error(
+      errorData.details
+        ? `${errorData.error}: ${errorData.details}`
+        : (errorData.error || `API error: ${response.status}`)
+    );
   }
 
   const data: GeminiApiResponse = await response.json();
