@@ -33,7 +33,7 @@ interface UserEventBooking {
 const generateSampleDates = (daysOfWeek: number[]): string[] => {
   const dates: string[] = [];
   const today = new Date();
-  
+
   // Generate dates for the next 4 weeks
   for (let week = 0; week < 4; week++) {
     for (const dayOfWeek of daysOfWeek) {
@@ -43,7 +43,7 @@ const generateSampleDates = (daysOfWeek: number[]): string[] => {
       }
     }
   }
-  
+
   return dates.sort();
 };
 
@@ -238,7 +238,7 @@ export const CommunityPage: React.FC = () => {
   const handleCancelEventBooking = async (eventId: string, eventName: string, eventDate: string, eventTime: string) => {
     const formattedDate = format(new Date(eventDate), 'MMMM d, yyyy');
     const confirmMessage = `Are you sure you want to cancel your booking for "${eventName}" on ${formattedDate} at ${eventTime}?`;
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
@@ -275,17 +275,17 @@ export const CommunityPage: React.FC = () => {
 
   const getNextAvailableDate = (dates?: string[]): string => {
     if (!dates || dates.length === 0) return 'No dates available';
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const nextDate = dates
       .map(dateStr => new Date(dateStr))
       .filter(date => date >= today)
       .sort((a, b) => a.getTime() - b.getTime())[0];
-    
+
     if (!nextDate) return 'No dates available';
-    
+
     return format(nextDate, 'MMM d, yyyy');
   };
 
@@ -299,7 +299,7 @@ export const CommunityPage: React.FC = () => {
     if (period) {
       return timeStr;
     }
-    
+
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -316,7 +316,7 @@ export const CommunityPage: React.FC = () => {
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-gray-800">
-          Singapore Mental Health Events
+          Community Events in Singapore
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Connect with others who understand your journey at events across Singapore
@@ -349,9 +349,8 @@ export const CommunityPage: React.FC = () => {
           </button>
 
           <div
-            className={`transition-all duration-300 ease-in-out overflow-hidden ${
-              showEvents ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-            }`}
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${showEvents ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+              }`}
           >
             {loadingEvents ? (
               <div className="text-center py-8">
@@ -451,11 +450,10 @@ export const CommunityPage: React.FC = () => {
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              selectedCategory === category
+            className={`px-6 py-2 rounded-full font-semibold transition-all ${selectedCategory === category
                 ? 'bg-gradient-to-r from-sage-500 to-lavender-500 text-white shadow-lg'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-            }`}
+              }`}
           >
             {category}
           </button>
@@ -483,13 +481,12 @@ export const CommunityPage: React.FC = () => {
               </div>
               {/* Price Badge */}
               <div className="absolute top-4 right-4">
-                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                  community.price === 'free' 
-                    ? 'bg-green-500 text-white' 
+                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold shadow-lg ${community.price === 'free'
+                    ? 'bg-green-500 text-white'
                     : community.price === 'varies'
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-blue-500 text-white'
-                }`}>
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-blue-500 text-white'
+                  }`}>
                   {community.price !== 'free' && community.price !== 'varies' && (
                     <DollarSign className="w-3 h-3" />
                   )}

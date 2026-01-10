@@ -95,23 +95,20 @@ export const HomePage: React.FC = () => {
       <section className="soft-card p-12 bg-gradient-to-br from-lavender-50 via-purple-50 to-pink-50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-lavender-200 to-purple-200 rounded-full blur-3xl opacity-30"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-br from-pink-200 to-rose-200 rounded-full blur-3xl opacity-30"></div>
-        
+
         <div className="relative z-10 max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-lavender-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <span className="px-4 py-1 bg-gradient-to-r from-lavender-500 to-purple-500 text-white text-sm font-bold rounded-full">
-              NEW FEATURE
-            </span>
           </div>
 
           <h2 className="text-4xl md:text-5xl font-serif font-semibold text-gray-800 text-center mb-4">
             Meet Your AI Companion
           </h2>
-          
+
           <p className="text-xl text-gray-700 text-center mb-8 leading-relaxed">
-            A compassionate AI that reads your journal entries and provides personalized support, 
+            A compassionate AI that reads your journal entries and provides personalized support,
             insights, and guidance tailored to your unique wellness journey.
           </p>
 
@@ -216,7 +213,7 @@ export const HomePage: React.FC = () => {
             Ready to Begin Your Journey?
           </h2>
           <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-            Join thousands of people taking control of their mental wellness with MindSpace.
+            Create your personal sanctuary for reflection, growth, and meaningful connections.
           </p>
           <button
             onClick={handleGetStarted}

@@ -52,7 +52,7 @@ async function callGeminiApi(prompt: string, temperature: number = 0.7, maxToken
   }
 
   const data: GeminiApiResponse = await response.json();
-  
+
   if (!data.text) {
     throw new Error('No text generated');
   }
