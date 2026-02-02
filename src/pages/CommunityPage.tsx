@@ -226,7 +226,6 @@ export const CommunityPage: React.FC = () => {
 
         setUserEvents(data || []);
       } catch (error) {
-        console.error('Error fetching events:', error);
       } finally {
         setLoadingEvents(false);
       }
@@ -244,7 +243,6 @@ export const CommunityPage: React.FC = () => {
     }
 
     setCancellingEventId(eventId);
-    console.log('🚫 Cancelling event booking:', eventId);
 
     try {
       const { error: deleteError } = await supabase
@@ -253,16 +251,13 @@ export const CommunityPage: React.FC = () => {
         .eq('id', eventId);
 
       if (deleteError) {
-        console.error('❌ Delete event booking error:', deleteError);
         throw deleteError;
       }
 
       setUserEvents(userEvents.filter(event => event.id !== eventId));
 
-      console.log('✅ Event booking cancelled successfully');
       alert('Event booking cancelled successfully');
     } catch (error: any) {
-      console.error('💥 Failed to cancel event booking:', error);
       alert('Failed to cancel event booking. Please try again.');
     } finally {
       setCancellingEventId(null);

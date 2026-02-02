@@ -52,10 +52,7 @@ export const AccountPage: React.FC = () => {
   const [removingFavoriteId, setRemovingFavoriteId] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 AccountPage - Auth state:', { isAuthenticated, user: user?.email });
-    
     if (!isAuthenticated) {
-      console.log('❌ Not authenticated, redirecting to home');
       navigate('/');
       return;
     }
@@ -67,17 +64,14 @@ export const AccountPage: React.FC = () => {
 
   const loadUserData = async () => {
     if (!user) {
-      console.log('❌ No user found');
       return;
     }
 
-    console.log('📥 Loading user data for:', user.id);
     setIsLoading(true);
     setError(null);
 
     try {
       // Load therapy bookings (including cancelled)
-      console.log('📅 Fetching therapy bookings...');
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
@@ -85,14 +79,11 @@ export const AccountPage: React.FC = () => {
         .order('date', { ascending: true });
 
       if (bookingsError) {
-        console.error('❌ Bookings error:', bookingsError);
       } else {
-        console.log('✅ Bookings loaded:', bookingsData?.length || 0);
         setBookings(bookingsData || []);
       }
 
       // Load event bookings (including cancelled)
-      console.log('🎉 Fetching event bookings...');
       const { data: eventBookingsData, error: eventBookingsError } = await supabase
         .from('event_bookings')
         .select('*')
@@ -100,14 +91,11 @@ export const AccountPage: React.FC = () => {
         .order('event_date', { ascending: true });
 
       if (eventBookingsError) {
-        console.error('❌ Event bookings error:', eventBookingsError);
       } else {
-        console.log('✅ Event bookings loaded:', eventBookingsData?.length || 0);
         setEventBookings(eventBookingsData || []);
       }
 
       // Load favorites
-      console.log('💖 Fetching favorites...');
       await loadFavorites(user.id);
       
       const { data: favoritesData, error: favoritesError } = await supabase
@@ -117,17 +105,13 @@ export const AccountPage: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (favoritesError) {
-        console.error('❌ Favorites error:', favoritesError);
       } else {
-        console.log('✅ Favorites loaded:', favoritesData?.length || 0);
         setFavoritesList(favoritesData || []);
       }
     } catch (error: any) {
-      console.error('💥 Failed to load user data:', error);
       setError(error.message || 'Failed to load data');
     } finally {
       setIsLoading(false);
-      console.log('✅ Data loading complete');
     }
   };
 
@@ -139,7 +123,6 @@ export const AccountPage: React.FC = () => {
     }
 
     setCancellingBookingId(bookingId);
-    console.log('🚫 Cancelling booking:', bookingId);
 
     try {
       const { error: cancelError } = await supabase
@@ -148,20 +131,16 @@ export const AccountPage: React.FC = () => {
         .eq('id', bookingId);
 
       if (cancelError) {
-        console.error('❌ Cancel booking error:', cancelError);
         throw cancelError;
       }
 
-      setBookings(bookings.map(booking => 
-        booking.id === bookingId 
+      setBookings(bookings.map(booking =>
+        booking.id === bookingId
           ? { ...booking, status: 'cancelled' }
           : booking
       ));
-
-      console.log('✅ Booking cancelled successfully');
       alert('Appointment cancelled successfully');
     } catch (error: any) {
-      console.error('💥 Failed to cancel booking:', error);
       alert('Failed to cancel appointment. Please try again.');
     } finally {
       setCancellingBookingId(null);
@@ -176,7 +155,6 @@ export const AccountPage: React.FC = () => {
     }
 
     setCancellingEventId(eventBookingId);
-    console.log('🚫 Cancelling event booking:', eventBookingId);
 
     try {
       const { error: cancelError } = await supabase
@@ -185,20 +163,16 @@ export const AccountPage: React.FC = () => {
         .eq('id', eventBookingId);
 
       if (cancelError) {
-        console.error('❌ Cancel event booking error:', cancelError);
         throw cancelError;
       }
 
-      setEventBookings(eventBookings.map(booking => 
-        booking.id === eventBookingId 
+      setEventBookings(eventBookings.map(booking =>
+        booking.id === eventBookingId
           ? { ...booking, status: 'cancelled' }
           : booking
       ));
-
-      console.log('✅ Event booking cancelled successfully');
       alert('Event booking cancelled successfully');
     } catch (error: any) {
-      console.error('💥 Failed to cancel event booking:', error);
       alert('Failed to cancel event booking. Please try again.');
     } finally {
       setCancellingEventId(null);
@@ -211,22 +185,17 @@ export const AccountPage: React.FC = () => {
     }
 
     try {
-      console.log('🗑️ Deleting booking:', bookingId);
-      
       const { error: deleteError } = await supabase
         .from('bookings')
         .delete()
         .eq('id', bookingId);
 
       if (deleteError) {
-        console.error('❌ Delete booking error:', deleteError);
         throw deleteError;
       }
 
       setBookings(bookings.filter(booking => booking.id !== bookingId));
-      console.log('✅ Booking deleted successfully');
     } catch (error: any) {
-      console.error('💥 Failed to delete booking:', error);
       alert('Failed to delete appointment. Please try again.');
     }
   };
@@ -237,22 +206,17 @@ export const AccountPage: React.FC = () => {
     }
 
     try {
-      console.log('🗑️ Deleting event booking:', eventBookingId);
-      
       const { error: deleteError } = await supabase
         .from('event_bookings')
         .delete()
         .eq('id', eventBookingId);
 
       if (deleteError) {
-        console.error('❌ Delete event booking error:', deleteError);
         throw deleteError;
       }
 
       setEventBookings(eventBookings.filter(booking => booking.id !== eventBookingId));
-      console.log('✅ Event booking deleted successfully');
     } catch (error: any) {
-      console.error('💥 Failed to delete event booking:', error);
       alert('Failed to delete event booking. Please try again.');
     }
   };
@@ -265,16 +229,12 @@ export const AccountPage: React.FC = () => {
     if (!user) return;
 
     setRemovingFavoriteId(favoriteId);
-    console.log('💔 Removing favorite from dashboard:', { favoriteId, clinicId, clinicName, userId: user.id });
 
     try {
-      console.log('🔄 Calling toggleFavorite with correct order...');
       await toggleFavorite(clinicId, user.id, clinicName);
       
       setFavoritesList(favoritesList.filter(f => f.id !== favoriteId));
-      console.log('✅ Favorite removed successfully from dashboard');
     } catch (error: any) {
-      console.error('❌ Failed to remove favorite:', error);
       alert('Failed to remove favorite. Please try again.');
     } finally {
       setRemovingFavoriteId(null);

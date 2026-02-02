@@ -17,7 +17,6 @@ function App() {
   const { initializeAuth, isInitialized } = useUserStore();
 
   useEffect(() => {
-    console.log('🚀 App mounted, initializing auth...');
     initializeAuth();
   }, [initializeAuth]);
 

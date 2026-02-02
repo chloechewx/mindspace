@@ -29,18 +29,13 @@ export const TherapyPage: React.FC = () => {
   const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🏥 TherapyPage mounted');
     initializeClinics();
   }, [initializeClinics]);
 
   useEffect(() => {
-    console.log('🔐 Auth state changed:', { isAuthenticated, userId: user?.id });
-    
     if (isAuthenticated && user) {
-      console.log('👤 Loading favorites for user:', user.id);
       loadFavorites(user.id);
     } else {
-      console.log('🧹 User not authenticated, clearing favorites');
       clearFavorites();
     }
   }, [isAuthenticated, user?.id, loadFavorites, clearFavorites]);
@@ -66,7 +61,6 @@ export const TherapyPage: React.FC = () => {
 
         setUserAppointments(data || []);
       } catch (error) {
-        console.error('Error fetching appointments:', error);
       } finally {
         setLoadingAppointments(false);
       }
@@ -84,7 +78,6 @@ export const TherapyPage: React.FC = () => {
     }
 
     setCancellingAppointmentId(appointmentId);
-    console.log('🚫 Cancelling appointment (soft delete):', appointmentId);
 
     try {
       // Soft delete: Update status to 'cancelled' instead of deleting
@@ -97,17 +90,14 @@ export const TherapyPage: React.FC = () => {
         .eq('id', appointmentId);
 
       if (updateError) {
-        console.error('❌ Update appointment error:', updateError);
         throw updateError;
       }
 
       // Remove from local state (since we only show scheduled appointments here)
       setUserAppointments(userAppointments.filter(apt => apt.id !== appointmentId));
 
-      console.log('✅ Appointment cancelled successfully (soft delete)');
       alert('Appointment cancelled successfully. You can view it in your Account page under "Cancelled Appointments".');
     } catch (error: any) {
-      console.error('💥 Failed to cancel appointment:', error);
       alert('Failed to cancel appointment. Please try again.');
     } finally {
       setCancellingAppointmentId(null);
@@ -157,8 +147,6 @@ export const TherapyPage: React.FC = () => {
         return 'Session';
     }
   };
-
-  console.log('🔍 Filtered clinics:', filteredClinics?.length || 0);
 
   return (
     <div className="space-y-8">

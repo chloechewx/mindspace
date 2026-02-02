@@ -71,7 +71,6 @@ export const AICompanionPage: React.FC = () => {
   const loadJournalEntries = async () => {
     if (!user) return;
 
-    console.log('📖 Loading journal entries for AI context...');
     setIsLoadingJournal(true);
 
     try {
@@ -83,14 +82,11 @@ export const AICompanionPage: React.FC = () => {
         .limit(20);
 
       if (error) {
-        console.error('❌ Error loading journal entries:', error);
         throw error;
       }
 
-      console.log(`✅ Loaded ${data?.length || 0} journal entries`);
       setJournalEntries(data || []);
     } catch (error: any) {
-      console.error('💥 Failed to load journal entries:', error);
     } finally {
       setIsLoadingJournal(false);
     }
@@ -99,7 +95,6 @@ export const AICompanionPage: React.FC = () => {
   const loadChatSessions = async () => {
     if (!user) return;
 
-    console.log('💬 Loading chat sessions from database...');
     setIsLoadingChats(true);
 
     try {
@@ -113,7 +108,6 @@ export const AICompanionPage: React.FC = () => {
       if (sessionsError) throw sessionsError;
 
       if (!sessionsData || sessionsData.length === 0) {
-        console.log('ℹ️ No existing sessions, creating new one...');
         await createNewChat();
         return;
       }
@@ -144,7 +138,6 @@ export const AICompanionPage: React.FC = () => {
         })
       );
 
-      console.log(`✅ Loaded ${sessionsWithMessages.length} chat sessions`);
       setChatSessions(sessionsWithMessages);
 
       // Set current session to most recent
@@ -154,7 +147,6 @@ export const AICompanionPage: React.FC = () => {
         setMessages(mostRecent.messages);
       }
     } catch (error: any) {
-      console.error('💥 Failed to load chat sessions:', error);
     } finally {
       setIsLoadingChats(false);
     }
@@ -162,8 +154,6 @@ export const AICompanionPage: React.FC = () => {
 
   const createNewChat = async () => {
     if (!user) return;
-
-    console.log('➕ Creating new chat session...');
 
     try {
       const welcomeMessage: Message = {
@@ -210,9 +200,7 @@ export const AICompanionPage: React.FC = () => {
       setMessages([welcomeMessage]);
       shouldScrollRef.current = true;
 
-      console.log('✅ New chat session created:', sessionData.id);
     } catch (error: any) {
-      console.error('💥 Failed to create new chat:', error);
     }
   };
 
@@ -265,7 +253,6 @@ export const AICompanionPage: React.FC = () => {
         session.id === sessionId ? { ...session, title } : session
       ));
     } catch (error) {
-      console.error('Failed to update session title:', error);
     }
   };
 
@@ -273,8 +260,6 @@ export const AICompanionPage: React.FC = () => {
     const textToSend = messageText || inputValue.trim();
     
     if (!textToSend || isLoading || !currentSessionId || !user) return;
-
-    console.log('💬 Sending message to AI Companion:', textToSend);
 
     // Disable auto-scroll when user sends message
     shouldScrollRef.current = false;
@@ -327,10 +312,7 @@ Respond like a supportive friend would. Keep it short (2-4 sentences). Reference
 
 Be real, be warm, be human.`;
 
-      console.log('🤖 Calling Gemini API...');
       const response = await geminiService.generateChatResponse(prompt);
-
-      console.log('✅ AI response received');
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
@@ -371,8 +353,6 @@ Be real, be warm, be human.`;
           : session
       ));
     } catch (error: any) {
-      console.error('❌ Error generating AI response:', error);
-      
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -434,12 +414,10 @@ Be real, be warm, be human.`;
         }
       }
     } catch (error) {
-      console.error('Failed to delete chat:', error);
     }
   };
 
   const handleLockClick = () => {
-    console.log('🔒 Lock clicked - opening sign in modal');
     openModal('login', 'Sign in to chat with your AI wellness buddy');
   };
 

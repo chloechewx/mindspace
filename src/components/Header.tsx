@@ -23,17 +23,12 @@ export const Header: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('🔘 Sign out button clicked');
-    
     // Close mobile menu immediately
     setIsMenuOpen(false);
     
     try {
-      console.log('🔓 Calling signOut...');
       await signOut();
-      
-      console.log('✅ Sign out successful, redirecting...');
-      
+
       // Navigate to home page
       navigate('/', { replace: true });
       
@@ -43,13 +38,11 @@ export const Header: React.FC = () => {
       }, 100);
       
     } catch (error) {
-      console.error('❌ Sign out error in Header:', error);
       alert('Failed to sign out. Please try again.');
     }
   };
 
   const handleSignInClick = () => {
-    console.log('🔘 Sign in button clicked');
     openModal('login');
     setIsMenuOpen(false);
   };

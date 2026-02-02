@@ -48,7 +48,6 @@ export const HomePage: React.FC = () => {
   ];
 
   const handleGetStarted = () => {
-    console.log('🚀 Get Started clicked');
     openModal('signup');
   };
 

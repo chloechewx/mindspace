@@ -25,12 +25,8 @@ export interface AuthResult {
 }
 
 class AuthService {
-  private authStateCallback: ((user: AuthUser | null) => void) | null = null;
-
   async signUp(data: SignUpData): Promise<AuthResult> {
     try {
-      console.log('🚀 Starting signup process...');
-      
       if (!data.email || !data.password || !data.name) {
         return {
           user: null,
@@ -55,8 +51,6 @@ class AuthService {
         };
       }
 
-      console.log('📧 Creating auth user for:', data.email);
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -68,7 +62,6 @@ class AuthService {
       });
 
       if (authError) {
-        console.error('❌ Auth error:', authError);
         return {
           user: null,
           error: this.formatAuthError(authError.message),
@@ -84,26 +77,25 @@ class AuthService {
         };
       }
 
-      console.log('✅ Auth user created:', authData.user.id);
-
-      await this.sleep(1000);
-
+      // Use upsert instead of sleep + insert to avoid race condition.
+      // If a database trigger already created the profile, upsert will update it.
+      // If not, upsert will insert it. No arbitrary delay needed.
       const profile = await this.createProfileWithRetry(
         authData.user.id,
         data.email,
         data.name
       );
 
+      // If profile creation fails, clean up the orphaned auth user
+      // so the email isn't permanently stuck in a broken state.
       if (!profile) {
-        console.error('❌ Profile creation failed');
+        await supabase.auth.signOut();
         return {
           user: null,
-          error: 'Account created but profile setup failed. Please contact support.',
+          error: 'Account setup failed. Please try signing up again.',
           success: false,
         };
       }
-
-      console.log('✅ Signup completed successfully');
 
       const user: AuthUser = {
         id: authData.user.id,
@@ -112,19 +104,12 @@ class AuthService {
         createdAt: new Date(profile.created_at),
       };
 
-      // Trigger auth state callback immediately
-      if (this.authStateCallback) {
-        console.log('🔔 Triggering auth state callback after signup');
-        this.authStateCallback(user);
-      }
-
       return {
         user,
         error: null,
         success: true,
       };
     } catch (error: any) {
-      console.error('💥 Signup error:', error);
       return {
         user: null,
         error: error.message || 'An unexpected error occurred',
@@ -140,44 +125,34 @@ class AuthService {
     maxRetries: number = 3
   ): Promise<any> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(`🔄 Profile creation attempt ${attempt}/${maxRetries}`);
-
       try {
+        // Use upsert to handle both cases:
+        // - Profile doesn't exist yet -> insert
+        // - Profile was already created by a DB trigger -> update
         const { data, error } = await supabase
           .from('profiles')
-          .insert({
-            id: userId,
-            email: email,
-            name: name,
-          })
+          .upsert(
+            {
+              id: userId,
+              email: email,
+              name: name,
+            },
+            { onConflict: 'id' }
+          )
           .select()
           .single();
 
         if (error) {
-          if (error.code === '23505') {
-            console.log('⚠️ Profile exists, fetching...');
-            const { data: existing } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', userId)
-              .single();
-            return existing;
-          }
-
           if (attempt < maxRetries) {
-            console.log(`⏳ Waiting before retry...`);
-            await this.sleep(1000 * attempt);
+            await this.sleep(500 * attempt);
             continue;
           }
-
           throw error;
         }
 
-        console.log('✅ Profile created');
         return data;
       } catch (err) {
         if (attempt === maxRetries) {
-          console.error('❌ All retries failed');
           return null;
         }
       }
@@ -196,15 +171,12 @@ class AuthService {
         };
       }
 
-      console.log('🔐 Signing in:', data.email);
-
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (authError) {
-        console.error('❌ Sign in error:', authError);
         return {
           user: null,
           error: this.formatAuthError(authError.message),
@@ -220,17 +192,35 @@ class AuthService {
         };
       }
 
-      const { data: profile, error: profileError } = await supabase
+      // sign-in side: If the user has an auth account but no profile
+      // if orphaned from a previous failed signup, create the profile now.
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError || !profile) {
-        console.error('❌ Profile error:', profileError);
+      if (!profile) {
+        const userName = authData.user.user_metadata?.name || data.email.split('@')[0];
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: authData.user.id,
+              email: data.email,
+              name: userName,
+            },
+            { onConflict: 'id' }
+          )
+          .select()
+          .single();
+        profile = newProfile;
+      }
+
+      if (!profile) {
         return {
           user: null,
-          error: 'Profile not found',
+          error: 'Unable to load user profile. Please try again.',
           success: false,
         };
       }
@@ -242,19 +232,12 @@ class AuthService {
         createdAt: new Date(profile.created_at),
       };
 
-      // Trigger auth state callback immediately
-      if (this.authStateCallback) {
-        console.log('🔔 Triggering auth state callback after sign in');
-        this.authStateCallback(user);
-      }
-
       return {
         user,
         error: null,
         success: true,
       };
     } catch (error: any) {
-      console.error('💥 Sign in error:', error);
       return {
         user: null,
         error: error.message || 'An unexpected error occurred',
@@ -265,34 +248,21 @@ class AuthService {
 
   async signOut(): Promise<{ error: string | null }> {
     try {
-      console.log('🔓 AuthService: Starting sign out...');
-      
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
-        console.error('❌ Supabase signOut error:', error);
         throw error;
       }
-      
-      console.log('✅ AuthService: Supabase sign out successful');
-      
-      // Trigger auth state callback
-      if (this.authStateCallback) {
-        console.log('🔔 Triggering auth state callback after sign out');
-        this.authStateCallback(null);
-      }
-      
+
       try {
         localStorage.removeItem('mindspace-auth');
         sessionStorage.clear();
-        console.log('✅ AuthService: Storage cleared');
       } catch (storageError) {
-        console.warn('⚠️ Could not clear storage:', storageError);
+        // Storage clearing is best-effort
       }
-      
+
       return { error: null };
     } catch (error: any) {
-      console.error('💥 AuthService: Sign out error:', error);
       return { error: error.message };
     }
   }
@@ -300,26 +270,14 @@ class AuthService {
   async getCurrentUser(): Promise<AuthResult> {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
+
       if (sessionError) {
-        console.error('❌ Session error:', sessionError);
-        return {
-          user: null,
-          error: null,
-          success: false,
-        };
+        return { user: null, error: null, success: false };
       }
 
       if (!session?.user) {
-        console.log('ℹ️ No active session');
-        return {
-          user: null,
-          error: null,
-          success: false,
-        };
+        return { user: null, error: null, success: false };
       }
-
-      console.log('✅ Session found for:', session.user.email);
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -328,12 +286,7 @@ class AuthService {
         .maybeSingle();
 
       if (profileError || !profile) {
-        console.error('❌ Profile error:', profileError);
-        return {
-          user: null,
-          error: 'Profile not found',
-          success: false,
-        };
+        return { user: null, error: 'Profile not found', success: false };
       }
 
       const user: AuthUser = {
@@ -343,37 +296,23 @@ class AuthService {
         createdAt: new Date(profile.created_at),
       };
 
-      return {
-        user,
-        error: null,
-        success: true,
-      };
+      return { user, error: null, success: true };
     } catch (error: any) {
-      console.error('💥 Get user error:', error);
-      return {
-        user: null,
-        error: null,
-        success: false,
-      };
+      return { user: null, error: null, success: false };
     }
   }
 
+  // Single source of truth — only use Supabase onAuthStateChange.
+  // Removed the manual authStateCallback system entirely.
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
-    console.log('🎧 Setting up auth state change listener');
-    this.authStateCallback = callback;
-
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 Supabase auth event:', event);
-      
       if (event === 'SIGNED_OUT') {
-        console.log('🚪 User signed out');
         callback(null);
         return;
       }
-      
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session?.user) {
-          console.log('👤 Fetching user profile after auth event');
           const { user } = await this.getCurrentUser();
           callback(user);
         } else {

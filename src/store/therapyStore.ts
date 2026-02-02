@@ -38,10 +38,9 @@ export const useTherapyStore = create<TherapyStore>((set, get) => ({
   filters: defaultFilters,
 
   initializeClinics: () => {
-    console.log('🏥 Initializing clinics:', therapyClinics.length);
-    set({ 
+    set({
       clinics: therapyClinics,
-      filteredClinics: therapyClinics 
+      filteredClinics: therapyClinics
     });
   },
 
@@ -59,7 +58,7 @@ export const useTherapyStore = create<TherapyStore>((set, get) => ({
 
   applyFilters: () => {
     const { clinics, filters } = get();
-    
+
     let filtered = [...clinics];
 
     // Availability filter
@@ -86,7 +85,7 @@ export const useTherapyStore = create<TherapyStore>((set, get) => ({
     // Therapy type filter
     if (filters.therapyType !== 'any') {
       filtered = filtered.filter((clinic) =>
-        clinic.therapyTypes.some(type => 
+        clinic.therapyTypes.some(type =>
           type.toLowerCase().includes(filters.therapyType.toLowerCase())
         )
       );
@@ -113,7 +112,6 @@ export const useTherapyStore = create<TherapyStore>((set, get) => ({
       );
     }
 
-    console.log('🔍 Filtered clinics:', filtered.length);
     set({ filteredClinics: filtered });
   },
 }));

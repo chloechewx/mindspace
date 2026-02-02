@@ -33,11 +33,11 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
   addEntry: async (entry) => {
     set({ isLoading: true });
-    
+
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+
       if (userError) throw userError;
       if (!user) throw new Error('User not authenticated');
 
@@ -72,7 +72,6 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
         .eq('id', data.id);
 
       if (updateError) {
-        console.error('Failed to save insights:', updateError);
       }
 
       // Add to local state
@@ -92,7 +91,6 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
         isGeneratingInsights: false,
       }));
     } catch (error) {
-      console.error('Failed to add entry:', error);
       set({ isGeneratingInsights: false });
       throw error;
     } finally {
@@ -102,11 +100,11 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
   loadEntries: async () => {
     set({ isLoading: true });
-    
+
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+
       if (userError) throw userError;
       if (!user) {
         set({ entries: [], isLoading: false });
@@ -134,7 +132,6 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
       set({ entries });
     } catch (error) {
-      console.error('Failed to load entries:', error);
       set({ entries: [] });
     } finally {
       set({ isLoading: false });
@@ -143,11 +140,11 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
   generateInsights: async (entryId: string) => {
     set({ isGeneratingInsights: true });
-    
+
     try {
       const { entries } = get();
       const entry = entries.find(e => e.id === entryId);
-      
+
       if (!entry) {
         throw new Error('Entry not found');
       }
@@ -175,7 +172,6 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
         insights,
       }));
     } catch (error) {
-      console.error('Failed to generate insights:', error);
       throw error;
     } finally {
       set({ isGeneratingInsights: false });
@@ -184,14 +180,14 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
   generateWeeklyReflection: async () => {
     set({ isGeneratingInsights: true });
-    
+
     try {
       const { entries } = get();
-      
+
       // Get last 7 days of entries
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
+
       const recentEntries = entries
         .filter(e => e.date >= sevenDaysAgo)
         .slice(0, 7);
@@ -200,7 +196,6 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
 
       set({ weeklyReflection });
     } catch (error) {
-      console.error('Failed to generate weekly reflection:', error);
       throw error;
     } finally {
       set({ isGeneratingInsights: false });

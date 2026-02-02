@@ -112,11 +112,7 @@ export const AuthModal: React.FC = () => {
       }
 
       if (success) {
-        console.log('✅ Auth successful, completing action...');
-        
-        // Small delay to ensure state propagates
         await new Promise(resolve => setTimeout(resolve, 100));
-        
         completeAction();
         handleClose();
       }

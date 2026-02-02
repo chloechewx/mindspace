@@ -317,7 +317,6 @@ export const EventDetailPage: React.FC = () => {
         });
 
       if (error) {
-        console.error('Error booking event:', error);
         throw error;
       }
       
@@ -325,7 +324,6 @@ export const EventDetailPage: React.FC = () => {
       setSelectedDate(null);
       setSelectedTime(null);
     } catch (error: any) {
-      console.error('Failed to book event:', error);
       alert('Failed to book event. Please try again.');
     } finally {
       setIsBooking(false);
@@ -338,7 +336,6 @@ export const EventDetailPage: React.FC = () => {
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 2000);
     }).catch(err => {
-      console.error('Failed to copy URL:', err);
       alert('Failed to copy URL. Please try again.');
     });
   };

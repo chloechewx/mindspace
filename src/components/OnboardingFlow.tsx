@@ -156,7 +156,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
       completeOnboarding(completeAssessment);
       onComplete();
     } catch (error) {
-      console.error('Error completing onboarding:', error);
       // Still complete onboarding even if there's an error
       onComplete();
     }

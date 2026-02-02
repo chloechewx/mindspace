@@ -7,7 +7,7 @@ interface AuthModalState {
   mode: AuthMode;
   actionDescription: string;
   pendingAction: (() => void) | null;
-  
+
   openModal: (mode?: AuthMode, description?: string, action?: () => void) => void;
   closeModal: () => void;
   setMode: (mode: AuthMode) => void;
@@ -19,9 +19,8 @@ export const useAuthModalStore = create<AuthModalState>((set, get) => ({
   mode: 'login',
   actionDescription: '',
   pendingAction: null,
-  
+
   openModal: (mode = 'login', description = '', action) => {
-    console.log('🔓 Opening auth modal:', { mode, description });
     set({
       isOpen: true,
       mode,
@@ -29,25 +28,22 @@ export const useAuthModalStore = create<AuthModalState>((set, get) => ({
       pendingAction: action || null,
     });
   },
-  
+
   closeModal: () => {
-    console.log('🔒 Closing auth modal');
     set({
       isOpen: false,
       actionDescription: '',
       pendingAction: null,
     });
   },
-  
+
   setMode: (mode) => {
-    console.log('🔄 Switching auth mode to:', mode);
     set({ mode });
   },
-  
+
   completeAction: () => {
     const { pendingAction } = get();
     if (pendingAction) {
-      console.log('✅ Executing pending action');
       pendingAction();
     }
     set({

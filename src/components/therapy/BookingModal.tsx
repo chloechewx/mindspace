@@ -42,16 +42,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setError('');
 
     try {
-      console.log('Submitting booking:', {
-        user_id: user.id,
-        therapist_id: clinic.id,
-        therapist_name: clinic.name,
-        date: selectedDate,
-        time: selectedTime,
-        type: sessionType,
-        notes: notes || null,
-      });
-
       const { data, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -67,12 +57,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         .select();
 
       if (bookingError) {
-        console.error('Booking error:', bookingError);
         throw bookingError;
       }
 
-      console.log('Booking successful:', data);
-      
       // Show success state
       setSuccess(true);
       
@@ -87,7 +74,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         setSuccess(false);
       }, 2000);
     } catch (err: any) {
-      console.error('Booking submission failed:', err);
       setError(err.message || 'Failed to book appointment. Please try again.');
     } finally {
       setIsSubmitting(false);

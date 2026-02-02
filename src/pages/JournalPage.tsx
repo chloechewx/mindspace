@@ -78,7 +78,6 @@ export const JournalPage: React.FC = () => {
       setEntries(data || []);
       calculateMoodStats(data || []);
     } catch (error) {
-      console.error('Failed to load entries:', error);
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +143,6 @@ export const JournalPage: React.FC = () => {
 
       setExpandedInsights(prev => new Set(prev).add(entryId));
     } catch (error: any) {
-      console.error('Failed to generate insights:', error);
       alert('Failed to generate insights. Please try again.');
     } finally {
       setGeneratingInsights(null);
@@ -209,7 +207,6 @@ export const JournalPage: React.FC = () => {
       
       alert('✅ Journal entry saved successfully!');
     } catch (error: any) {
-      console.error('Failed to save entry:', error);
       alert('Failed to save entry. Please try again.');
     } finally {
       setIsSaving(false);
@@ -233,7 +230,6 @@ export const JournalPage: React.FC = () => {
       setDeleteConfirm(null);
       alert('✅ Entry deleted successfully');
     } catch (error) {
-      console.error('Failed to delete entry:', error);
       alert('Failed to delete entry. Please try again.');
     } finally {
       setIsDeleting(false);
