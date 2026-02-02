@@ -16,7 +16,7 @@ This project was submitted to **Codechella Singapore 2025**, powered by **ChatAn
   <img src="Mindspace_landing.png" alt="MindSpace Landing Page" width="800"/>
 </p>
 <p align="center">
-  <a href="https://mindspace-1762454767596.chatand.build/" target="_blank">View Live Project</a> 
+  <a href="https://mindspace-mu-two.vercel.app/" target="_blank">View Live Project</a> 
 </p>
 
 ---
