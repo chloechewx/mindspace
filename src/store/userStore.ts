@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import { authService, AuthUser } from '../services/authService.ts';
+import type { AuthChangeEvent, Session, Subscription } from '@supabase/supabase-js';
+
+const AUTH_INIT_TIMEOUT_MS = 5000;
+const PROFILE_FETCH_TIMEOUT_MS = 4000;
 
 interface UserState {
   user: AuthUser | null;
@@ -8,7 +12,7 @@ interface UserState {
   error: string | null;
   isInitialized: boolean;
 
-  initializeAuth: () => Promise<void>;
+  initializeAuth: () => () => void;
   signUp: (email: string, password: string, name: string) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -16,8 +20,14 @@ interface UserState {
   setUser: (user: AuthUser | null) => void;
 }
 
-// Removed Zustand persist middleware entirely.
-// Auth state is now always derived from the Supabase session on app init
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+// Auth state is always derived from the Supabase session on app init
 // via initializeAuth(). This prevents desync between localStorage and
 // the actual Supabase session (e.g. expired token but isAuthenticated: true).
 export const useUserStore = create<UserState>()(
@@ -29,56 +39,120 @@ export const useUserStore = create<UserState>()(
     isInitialized: false,
 
     setUser: (user: AuthUser | null) => {
-      set({
-        user,
-        isAuthenticated: !!user,
-      });
+      set({ user, isAuthenticated: !!user });
     },
 
-    initializeAuth: async () => {
+    /**
+     * Sets up the Supabase auth listener and returns a cleanup function.
+     *
+     * Uses INITIAL_SESSION event as the single source of truth for
+     * session readiness. The session param from the callback is used
+     * directly — getSession() is never called inside the listener.
+     */
+    initializeAuth: () => {
       if (get().isInitialized) {
-        return;
+        return () => {};
       }
 
       set({ isLoading: true, error: null });
 
-      try {
-        const result = await authService.getCurrentUser();
+      let initialSessionHandled = false;
+      let subscription: Subscription | null = null;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-        if (result.success && result.user) {
-          set({
-            user: result.user,
-            isAuthenticated: true,
-            isLoading: false,
-            isInitialized: true,
-          });
-        } else {
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            isInitialized: true,
-          });
+      const markInitialized = (user: AuthUser | null) => {
+        if (initialSessionHandled) return;
+        initialSessionHandled = true;
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
         }
-
-        // Only source of auth state updates after init.
-        // signUp/signIn methods set state directly for immediate UI response,
-        // and this listener handles all subsequent events (token refresh, etc.)
-        authService.onAuthStateChange((user) => {
-          set({
-            user,
-            isAuthenticated: !!user,
-          });
-        });
-      } catch (error: any) {
         set({
-          user: null,
-          isAuthenticated: false,
+          user,
+          isAuthenticated: !!user,
           isLoading: false,
-          error: error.message,
           isInitialized: true,
         });
-      }
+      };
+
+      const updateUser = (user: AuthUser | null) => {
+        set({ user, isAuthenticated: !!user });
+      };
+
+      const fetchProfileSafe = async (userId: string): Promise<AuthUser | null> => {
+        return withTimeout(authService.fetchProfile(userId), PROFILE_FETCH_TIMEOUT_MS);
+      };
+
+      subscription = authService.onAuthStateChange(
+        async (event: AuthChangeEvent, session: Session | null) => {
+
+          if (event === 'INITIAL_SESSION') {
+            if (session?.user) {
+              const profile = await fetchProfileSafe(session.user.id);
+              if (profile) {
+                markInitialized(profile);
+              } else {
+                // Profile fetch failed/timed out — use session metadata as fallback
+                const fallbackUser: AuthUser = {
+                  id: session.user.id,
+                  email: session.user.email ?? '',
+                  name: session.user.user_metadata?.name ?? session.user.email?.split('@')[0] ?? 'User',
+                  createdAt: new Date(session.user.created_at),
+                };
+                markInitialized(fallbackUser);
+              }
+            } else {
+              markInitialized(null);
+            }
+            return;
+          }
+
+          // Only process post-init events after initialization
+          if (!initialSessionHandled) return;
+
+          if (event === 'SIGNED_OUT') {
+            updateUser(null);
+            return;
+          }
+
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            if (session?.user) {
+              const profile = await fetchProfileSafe(session.user.id);
+              if (profile) {
+                updateUser(profile);
+              }
+            }
+            return;
+          }
+
+          // TOKEN_REFRESHED: no action needed.
+          // The token is already updated in the Supabase client internally.
+          // Profile data hasn't changed, so no DB query needed.
+        }
+      );
+
+      // Fallback: if INITIAL_SESSION never fires (corrupt localStorage, SDK issue),
+      // clear storage and load as unauthenticated.
+      timeoutId = setTimeout(() => {
+        if (!initialSessionHandled) {
+          try {
+            localStorage.removeItem('mindspace-auth');
+          } catch { /* best-effort */ }
+          markInitialized(null);
+        }
+      }, AUTH_INIT_TIMEOUT_MS);
+
+      // Return cleanup function for useEffect
+      return () => {
+        if (subscription) {
+          subscription.unsubscribe();
+          subscription = null;
+        }
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+      };
     },
 
     signUp: async (email: string, password: string, name: string) => {
@@ -177,7 +251,7 @@ export const useUserStore = create<UserState>()(
           localStorage.removeItem('mindspace-user-storage');
           localStorage.removeItem('mindspace-auth');
         } catch (e) {
-          
+          // Best-effort storage cleanup
         }
 
         throw error;

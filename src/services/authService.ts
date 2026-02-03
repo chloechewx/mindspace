@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 export interface AuthUser {
   id: string;
@@ -267,59 +268,44 @@ class AuthService {
     }
   }
 
-  async getCurrentUser(): Promise<AuthResult> {
+  /**
+   * Fetch the profile row for a given userId.
+   * Uses the session token the Supabase client already holds internally.
+   */
+  async fetchProfile(userId: string): Promise<AuthUser | null> {
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        return { user: null, error: null, success: false };
-      }
-
-      if (!session?.user) {
-        return { user: null, error: null, success: false };
-      }
-
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
+        .select('id, email, name, created_at')
+        .eq('id', userId)
         .maybeSingle();
 
-      if (profileError || !profile) {
-        return { user: null, error: 'Profile not found', success: false };
-      }
+      if (error || !profile) return null;
 
-      const user: AuthUser = {
-        id: session.user.id,
+      return {
+        id: profile.id,
         email: profile.email,
         name: profile.name,
         createdAt: new Date(profile.created_at),
       };
-
-      return { user, error: null, success: true };
-    } catch (error: any) {
-      return { user: null, error: null, success: false };
+    } catch {
+      return null;
     }
   }
 
-  // Single source of truth — only use Supabase onAuthStateChange.
-  // Removed the manual authStateCallback system entirely.
-  onAuthStateChange(callback: (user: AuthUser | null) => void) {
-    return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        callback(null);
-        return;
+  /**
+   * Thin wrapper around supabase.auth.onAuthStateChange.
+   * Passes raw (event, session) to the callback without calling
+   * getSession() internally (which Supabase warns against).
+   * Returns the subscription so callers can unsubscribe.
+   */
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        callback(event, session);
       }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        if (session?.user) {
-          const { user } = await this.getCurrentUser();
-          callback(user);
-        } else {
-          callback(null);
-        }
-      }
-    });
+    );
+    return subscription;
   }
 
   private isValidEmail(email: string): boolean {

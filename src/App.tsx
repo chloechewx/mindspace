@@ -17,7 +17,8 @@ function App() {
   const { initializeAuth, isInitialized } = useUserStore();
 
   useEffect(() => {
-    initializeAuth();
+    const cleanup = initializeAuth();
+    return cleanup;
   }, [initializeAuth]);
 
   if (!isInitialized) {
